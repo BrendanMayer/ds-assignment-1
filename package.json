@@ -1,0 +1,28 @@
+{
+  "name": "ds-assignment",
+  "version": "1.0.0",
+  "bin": {
+    "ds-assignment": "bin/ds-assignment.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy",
+    "seed": "ts-node scripts/seed.ts"
+  },
+  "devDependencies": {
+    "aws-cdk-lib": "2.151.0",
+    "constructs": "10.3.0",
+    "ts-node": "10.9.2",
+    "typescript": "5.4.5",
+    "source-map-support": "0.5.21"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "3.624.0",
+    "@aws-sdk/client-dynamodb": "3.624.0",
+    "@aws-sdk/client-translate": "3.624.0",
+    "@aws-sdk/lib-dynamodb": "3.624.0"
+  }
+}
