@@ -24,3 +24,23 @@ I added POST /things to create items. For now it is public so I can test quickly
 
 ![alt text](images/PostCLI.png)
 ![alt text](images/tablePOSTitems.png)
+
+### - Commit 6
+I updated the GET route to support filters. You can pass ratingGte to filter by number and contains to search in the title or description.
+
+Filter by rating
+
+curl "https://h8zo4p4yk6.execute-api.eu-west-1.amazonaws.com/prod/things/group%23books?ratingGte=4"
+![alt text](images/filterbyrating.png)
+    
+Filter by substring
+
+curl "https://h8zo4p4yk6.execute-api.eu-west-1.amazonaws.com/prod/things/group%23books?contains=notes"
+![alt text](images/filterbysubstring.png)
+
+
+Filter by both rating and substring
+
+curl "https://h8zo4p4yk6.execute-api.eu-west-1.amazonaws.com/prod/things/group%23books?ratingGte=4&contains=long"
+![alt text](images/filterbyboth.png)
+
