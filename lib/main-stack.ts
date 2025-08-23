@@ -5,6 +5,7 @@ import { RestApi, LambdaIntegration, Cors, CognitoUserPoolsAuthorizer, Authoriza
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs'
 import { Runtime } from 'aws-cdk-lib/aws-lambda'
 import { UserPool, UserPoolClient, AccountRecovery } from 'aws-cdk-lib/aws-cognito'
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam'
 import * as path from 'path'
 
 export class MainStack extends cdk.Stack {
@@ -18,14 +19,14 @@ export class MainStack extends cdk.Stack {
     super(scope, id, props)
 
     this.table = new Table(this, 'ThingsTable', {
-    partitionKey: { name: 'pk', type: AttributeType.STRING },
-    sortKey: { name: 'sk', type: AttributeType.STRING },
-    billingMode: BillingMode.PAY_PER_REQUEST,
-    removalPolicy: cdk.RemovalPolicy.DESTROY,
-    deletionProtection: false
-  })
+      partitionKey: { name: 'pk', type: AttributeType.STRING },
+      sortKey: { name: 'sk', type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      deletionProtection: false
+    })
 
-      this.userPool = new UserPool(this, 'UserPool', {
+    this.userPool = new UserPool(this, 'UserPool', {
       selfSignUpEnabled: true,
       signInAliases: { email: true },
       accountRecovery: AccountRecovery.EMAIL_ONLY
@@ -72,12 +73,25 @@ export class MainStack extends cdk.Stack {
     })
     this.table.grantReadWriteData(putThingFn)
 
+    const getTranslationFn = new NodejsFunction(this, 'GetTranslationFn', {
+      entry: path.join(__dirname, '../lambda/app/getTranslation.ts'),
+      handler: 'handler',
+      runtime: Runtime.NODEJS_20_X,
+      environment: { TABLE_NAME: this.table.tableName }
+    })
+    this.table.grantReadWriteData(getTranslationFn)
+    getTranslationFn.addToRolePolicy(new PolicyStatement({ actions: ['translate:TranslateText'], resources: ['*'] }))
+    getTranslationFn.addToRolePolicy(new PolicyStatement({ actions: ['comprehend:DetectDominantLanguage'], resources: ['*'] }))
+
     const things = this.appApi.root.addResource('things')
     const byPk = things.addResource('{pk}')
     const byPkSk = byPk.addResource('{sk}')
+    const translation = byPkSk.addResource('translation')
+
     byPk.addMethod('GET', new LambdaIntegration(getThingsFn))
     things.addMethod('POST', new LambdaIntegration(postThingFn), { authorizer, authorizationType: AuthorizationType.COGNITO })
     byPkSk.addMethod('PUT', new LambdaIntegration(putThingFn), { authorizer, authorizationType: AuthorizationType.COGNITO })
+    translation.addMethod('GET', new LambdaIntegration(getTranslationFn))
 
     this.authApi = new RestApi(this, 'AuthApi', {
       restApiName: 'AuthApi',
@@ -118,9 +132,20 @@ export class MainStack extends cdk.Stack {
       environment: baseAuthEnv
     })
 
+    signupFn.addToRolePolicy(new PolicyStatement({ actions: ['cognito-idp:SignUp'], resources: ['*'] }))
+    confirmFn.addToRolePolicy(new PolicyStatement({ actions: ['cognito-idp:ConfirmSignUp'], resources: ['*'] }))
+    loginFn.addToRolePolicy(new PolicyStatement({ actions: ['cognito-idp:InitiateAuth'], resources: ['*'] }))
+    logoutFn.addToRolePolicy(new PolicyStatement({ actions: ['cognito-idp:GlobalSignOut'], resources: ['*'] }))
+
     this.authApi.root.addResource('signup').addMethod('POST', new LambdaIntegration(signupFn))
     this.authApi.root.addResource('confirm').addMethod('POST', new LambdaIntegration(confirmFn))
     this.authApi.root.addResource('login').addMethod('POST', new LambdaIntegration(loginFn))
     this.authApi.root.addResource('logout').addMethod('POST', new LambdaIntegration(logoutFn))
+
+    new cdk.CfnOutput(this, 'AppApiEndpoint', { value: this.appApi.url })
+    new cdk.CfnOutput(this, 'AuthApiEndpoint', { value: this.authApi.url })
+    new cdk.CfnOutput(this, 'ThingsTableName', { value: this.table.tableName })
+    new cdk.CfnOutput(this, 'UserPoolId', { value: this.userPool.userPoolId })
+    new cdk.CfnOutput(this, 'UserPoolClientId', { value: this.userPoolClient.userPoolClientId })
   }
 }
