@@ -12,3 +12,10 @@ I added a DynamoDB table with a composite key: pk and sk. I wrote a small seed s
 I created the App API and added a GET route that returns all items for a given pk. This endpoint is public and helps verify the table and data.
 
 ![alt text](images/tableGETcli.png)
+
+### - Commit 4
+I added Cognito for sign up and login. There is a basic Auth API with signup, confirm, login, and logout. This gives me tokens I can use later to protect routes.
+
+![alt text](images/emailCode.png)
+![alt text](images/accesstokenCLI.png)
+
