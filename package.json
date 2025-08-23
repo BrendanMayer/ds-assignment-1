@@ -15,9 +15,10 @@
   "devDependencies": {
     "aws-cdk-lib": "2.151.0",
     "constructs": "10.3.0",
+    "esbuild": "^0.21.5",
+    "source-map-support": "0.5.21",
     "ts-node": "10.9.2",
-    "typescript": "5.4.5",
-    "source-map-support": "0.5.21"
+    "typescript": "5.4.5"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "3.624.0",
