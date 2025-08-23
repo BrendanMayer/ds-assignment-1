@@ -44,3 +44,7 @@ Filter by both rating and substring
 curl "https://h8zo4p4yk6.execute-api.eu-west-1.amazonaws.com/prod/things/group%23books?ratingGte=4&contains=long"
 ![alt text](images/filterbyboth.png)
 
+### - Commit 7
+I protected POST and added a PUT route. Only logged-in users can call these. The PUT checks the owner and only allows the creator to update the item. When description changes, existing translations are cleared.
+
+

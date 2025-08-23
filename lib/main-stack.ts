@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 import { Table, AttributeType, BillingMode } from 'aws-cdk-lib/aws-dynamodb'
-import { RestApi, LambdaIntegration, Cors } from 'aws-cdk-lib/aws-apigateway'
+import { RestApi, LambdaIntegration, Cors, CognitoUserPoolsAuthorizer, AuthorizationType } from 'aws-cdk-lib/aws-apigateway'
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs'
 import { Runtime } from 'aws-cdk-lib/aws-lambda'
 import { UserPool, UserPoolClient, AccountRecovery } from 'aws-cdk-lib/aws-cognito'
@@ -25,7 +25,21 @@ export class MainStack extends cdk.Stack {
     deletionProtection: false
   })
 
-     this.appApi = new RestApi(this, 'AppApi', {
+      this.userPool = new UserPool(this, 'UserPool', {
+      selfSignUpEnabled: true,
+      signInAliases: { email: true },
+      accountRecovery: AccountRecovery.EMAIL_ONLY
+    })
+    this.userPoolClient = this.userPool.addClient('UserPoolClient', {
+      authFlows: { userPassword: true },
+      generateSecret: false
+    })
+
+    const authorizer = new CognitoUserPoolsAuthorizer(this, 'AppAuthorizer', {
+      cognitoUserPools: [this.userPool]
+    })
+
+    this.appApi = new RestApi(this, 'AppApi', {
       restApiName: 'AppApi',
       defaultCorsPreflightOptions: {
         allowOrigins: Cors.ALL_ORIGINS,
@@ -50,20 +64,20 @@ export class MainStack extends cdk.Stack {
     })
     this.table.grantWriteData(postThingFn)
 
-    const things = this.appApi.root.addResource('things')
-    things.addMethod('POST', new LambdaIntegration(postThingFn))
-    const byPk = things.addResource('{pk}')
-    byPk.addMethod('GET', new LambdaIntegration(getThingsFn))
+    const putThingFn = new NodejsFunction(this, 'PutThingFn', {
+      entry: path.join(__dirname, '../lambda/app/putThing.ts'),
+      handler: 'handler',
+      runtime: Runtime.NODEJS_20_X,
+      environment: { TABLE_NAME: this.table.tableName }
+    })
+    this.table.grantReadWriteData(putThingFn)
 
-    this.userPool = new UserPool(this, 'UserPool', {
-      selfSignUpEnabled: true,
-      signInAliases: { email: true },
-      accountRecovery: AccountRecovery.EMAIL_ONLY
-    })
-    this.userPoolClient = this.userPool.addClient('UserPoolClient', {
-      authFlows: { userPassword: true },
-      generateSecret: false
-    })
+    const things = this.appApi.root.addResource('things')
+    const byPk = things.addResource('{pk}')
+    const byPkSk = byPk.addResource('{sk}')
+    byPk.addMethod('GET', new LambdaIntegration(getThingsFn))
+    things.addMethod('POST', new LambdaIntegration(postThingFn), { authorizer, authorizationType: AuthorizationType.COGNITO })
+    byPkSk.addMethod('PUT', new LambdaIntegration(putThingFn), { authorizer, authorizationType: AuthorizationType.COGNITO })
 
     this.authApi = new RestApi(this, 'AuthApi', {
       restApiName: 'AuthApi',

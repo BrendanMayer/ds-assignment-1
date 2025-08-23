@@ -6,7 +6,8 @@ export const handler = async (event: any) => {
   const table = process.env.TABLE_NAME as string
   const now = Date.now()
   const body = JSON.parse(event.body || '{}')
-  const owner = body.owner || 'anonymous'
+  const claims = event.requestContext.authorizer && event.requestContext.authorizer.claims ? event.requestContext.authorizer.claims : null
+  const owner = claims && claims.sub ? claims.sub : 'anonymous'
   const pk = body.pk
   const sk = body.sk || `item#${crypto.randomUUID()}`
   const title = body.title

@@ -10,7 +10,8 @@
     "cdk": "cdk",
     "synth": "cdk synth",
     "deploy": "cdk deploy",
-    "seed": "ts-node scripts/seed.ts"
+    "seed": "ts-node scripts/seed.ts",
+    "demo": "ts-node scripts/demo.ts"
   },
   "devDependencies": {
     "aws-cdk-lib": "2.151.0",
