@@ -41,7 +41,17 @@ export class MainStack extends cdk.Stack {
       environment: { TABLE_NAME: this.table.tableName }
     })
     this.table.grantReadData(getThingsFn)
+
+    const postThingFn = new NodejsFunction(this, 'PostThingFn', {
+      entry: path.join(__dirname, '../lambda/app/postThing.ts'),
+      handler: 'handler',
+      runtime: Runtime.NODEJS_20_X,
+      environment: { TABLE_NAME: this.table.tableName }
+    })
+    this.table.grantWriteData(postThingFn)
+
     const things = this.appApi.root.addResource('things')
+    things.addMethod('POST', new LambdaIntegration(postThingFn))
     const byPk = things.addResource('{pk}')
     byPk.addMethod('GET', new LambdaIntegration(getThingsFn))
 

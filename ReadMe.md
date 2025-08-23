@@ -19,3 +19,8 @@ I added Cognito for sign up and login. There is a basic Auth API with signup, co
 ![alt text](images/emailCode.png)
 ![alt text](images/accesstokenCLI.png)
 
+### - Commit 5
+I added POST /things to create items. For now it is public so I can test quickly. It writes an item with a rating and long description.
+
+![alt text](images/PostCLI.png)
+![alt text](images/tablePOSTitems.png)
