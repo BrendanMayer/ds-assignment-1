@@ -32,4 +32,3 @@ pnpm-debug.log*
 
 # personal temp files
 outputs.md
-scripts/demo.ts
